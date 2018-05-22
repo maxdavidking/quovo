@@ -13,3 +13,9 @@ link = "https://www.sec.gov/Archives/edgar/data/1166559/000110465918033472/a18-1
 response = requests.get(link)
 #Add error handling based on http response code
 print response
+
+#transform response into string
+source = response.content
+
+#create lxml etree element
+root = etree.fromstring(source)
