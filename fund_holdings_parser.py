@@ -19,3 +19,8 @@ source = response.content
 
 #create lxml etree element
 root = etree.fromstring(source)
+
+#Iterate through lxml etree element getting values with child function
+for child in root:
+    for child in child:
+        csvwriter.writerow(child.text)
