@@ -11,4 +11,5 @@ link = "https://www.sec.gov/Archives/edgar/data/1166559/000110465918033472/a18-1
 
 #Use requests library to retrieve source code
 response = requests.get(link)
+#Add error handling based on http response code
 print response
