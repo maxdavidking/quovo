@@ -6,6 +6,7 @@ import csv
 ticker_data = open('tmp/ticker.tsv', 'w')
 csvwriter = csv.writer(ticker_data, delimiter='\t')
 
+
 #Hard code link directly to XML for now
 link = "https://www.sec.gov/Archives/edgar/data/1166559/000110465918033472/a18-13444_1informationtable.xml"
 
@@ -23,16 +24,29 @@ root = etree.fromstring(source)
 #Define namespace and get all records of infoTable
 funds = root.xpath('//informationTable:infoTable', namespaces = {"informationTable": "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
 
+#Set up empty list for headers
+headers = []
+#Set up empty list for lists of child nodes' text (multidimensional list)
 funds_text = []
+#Iterate through each infoTable
 for fund in funds:
-    elements = fund.xpath('*')
+    #Get all child and grandchild elements within the infoTable
+    elements = fund.xpath('.//*')
+    #Set up counter for second level of iteration
     i = 0
+    #Set up empty list for text values that will get inserted into funds_text list
     fund_attributes = []
+    #insert the list of text values into the funds_text list
     funds_text.append(fund_attributes)
+    #iterate through children of infoTable getting their text values
     for x in elements:
-        fund_attributes.append(elements[i].text)
-        i += 1
+        #NEED TO JUST DO THIS ONCE
+        headers.append(elements[i].tag)
+        #store text values in fund_attributes
+        if elements[i].text == "\n      ":
+            fund_attributes.append("empty")
+        else:
+            fund_attributes.append(elements[i].text)
 
-#print funds_text
-for x in funds_text:
-    print x
+        #increment counter up one
+        i += 1
