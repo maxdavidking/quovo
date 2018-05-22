@@ -20,7 +20,19 @@ source = response.content
 #create lxml etree element
 root = etree.fromstring(source)
 
-#Iterate through lxml etree element getting values with child function
-for child in root:
-    for child in child:
-        csvwriter.writerow(child.text)
+#Define namespace and get all records of infoTable
+funds = root.xpath('//informationTable:infoTable', namespaces = {"informationTable": "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
+
+funds_text = []
+for fund in funds:
+    elements = fund.xpath('*')
+    i = 0
+    fund_attributes = []
+    funds_text.append(fund_attributes)
+    for x in elements:
+        fund_attributes.append(elements[i].text)
+        i += 1
+
+#print funds_text
+for x in funds_text:
+    print x
