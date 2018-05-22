@@ -57,3 +57,18 @@ for x in reduced_headers:
     print type(x)
     x_split = x.split('}', 1)[-1]
     print x_split
+
+#Create TSV name - need to add pass through from ARGV
+tsvFilename = "tmp/ticker.tsv"
+#Create or Open TSV
+tsv = open(tsvFilename, "w")
+#Create colNames, need to get dynamically and separate with TSV
+col_names = '\t'.join(reduced_headers)
+tsv.write(col_names)
+for values in funds_text:
+    string_values = '\t'.join(values)
+    print string_values
+    #write to tsv
+    tsv.write(string_values)
+    #Move to new line
+    tsv.write("\n")
