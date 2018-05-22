@@ -50,3 +50,10 @@ for fund in funds:
 
         #increment counter up one
         i += 1
+
+#Temporary strip of all but first x elements - also strip out namespace from header
+reduced_headers = headers[:12]
+for x in reduced_headers:
+    print type(x)
+    x_split = x.split('}', 1)[-1]
+    print x_split
