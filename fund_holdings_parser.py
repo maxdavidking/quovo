@@ -8,3 +8,7 @@ csvwriter = csv.writer(ticker_data, delimiter='\t')
 
 #Hard code link directly to XML for now
 link = "https://www.sec.gov/Archives/edgar/data/1166559/000110465918033472/a18-13444_1informationtable.xml"
+
+#Use requests library to retrieve source code
+response = requests.get(link)
+print response
