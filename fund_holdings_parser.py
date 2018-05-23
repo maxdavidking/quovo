@@ -1,11 +1,39 @@
 from lxml import etree
 import requests
 import csv
-import sys
+import sys, getopt
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait as wait
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.common.by import By
 
-#Open new TSV file to save data in tab separated format
-ticker_data = open('tmp/ticker.tsv', 'w')
-csvwriter = csv.writer(ticker_data, delimiter='\t')
+def main():
+    #Include getopts options
+    #Have error message
+    driver = webdriver.Firefox()
+    driver.get("https://www.sec.gov/edgar/searchedgar/companysearch.html")
+    element = driver.find_element_by_id("cik")
+    element.send_keys(sys.argv[1])
+    element.submit()
+    wait(driver, 3).until(
+    expected_conditions.text_to_be_present_in_element(
+        (By.ID, 'documentsbutton'),
+        'Documents'
+        )
+    )
+    #Return this URL and pass to new function that looks for 'documents'?
+    element2 = driver.find_element_by_xpath("//*[contains(text(), '13F-HR')]/following::td")
+    element2.click()
+    wait(driver, 3).until(
+    expected_conditions.text_to_be_present_in_element(
+        (By.ID, 'formName'),
+        'Form 13F-HR'
+        )
+    )
+    element3 = driver.find_element_by_partial_link_text("able.xml")
+    #This is the URL
+    return element3.get_attribute("href")
+
 
 
 #Hard code link directly to XML for now
@@ -15,7 +43,6 @@ link = "https://www.sec.gov/Archives/edgar/data/1166559/000110465918033472/a18-1
 response = requests.get(link)
 #Add error handling based on http response code
 print response
-
 #transform response into string
 source = response.content
 
@@ -74,3 +101,6 @@ for values in funds_text:
     tsv.write(string_values)
     #Move to new line
     tsv.write("\n")
+
+if __name__ == "__main__":
+    main()
