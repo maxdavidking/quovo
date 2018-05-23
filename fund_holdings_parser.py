@@ -1,6 +1,7 @@
 from lxml import etree
 import requests
 import csv
+import sys
 
 #Open new TSV file to save data in tab separated format
 ticker_data = open('tmp/ticker.tsv', 'w')
@@ -65,6 +66,7 @@ tsv = open(tsvFilename, "w")
 #Create colNames, need to get dynamically and separate with TSV
 col_names = '\t'.join(reduced_headers)
 tsv.write(col_names)
+tsv.write('\n')
 for values in funds_text:
     string_values = '\t'.join(values)
     print string_values
