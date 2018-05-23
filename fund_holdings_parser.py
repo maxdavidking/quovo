@@ -17,6 +17,14 @@ def main():
     xml_string = stringify_xml(filing_details)
     print xml_string
     xml_tree = create_etree(xml_string)
+    print xml_tree
+    headers = get_headers(xml_tree)
+    print headers
+    reduced_headers = trim_headers(headers)
+    print reduced_headers
+    fund_data = get_fund_data(xml_tree)
+    print fund_data
+    write_tsv(reduced_headers, fund_data)
 
 def cik_lookup():
     #Include getopts options
@@ -70,71 +78,86 @@ def create_etree(xml):
     #create lxml etree element
     return etree.fromstring(xml)
 
-#Hard code link directly to XML for now
-link = "https://www.sec.gov/Archives/edgar/data/1166559/000110465918033472/a18-13444_1informationtable.xml"
+def get_headers(etree):
+    funds = etree.xpath('//informationTable:infoTable', namespaces = {"informationTable": "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
+    headers = []
+    #Set up empty list for lists of child nodes' text (multidimensional list)
+    funds_text = []
+    #Iterate through each infoTable
+    for fund in funds:
+        #Get all child and grandchild elements within the infoTable
+        elements = fund.xpath('.//*')
+        #Set up counter for second level of iteration
+        i = 0
+        #Set up empty list for text values that will get inserted into funds_text list
+        fund_attributes = []
+        #insert the list of text values into the funds_text list
+        funds_text.append(fund_attributes)
+        #iterate through children of infoTable getting their text values
+        for x in elements:
+            #NEED TO JUST DO THIS ONCE
+            headers.append(elements[i].tag)
+            #store text values in fund_attributes
+            if elements[i].text == "\n      ":
+                fund_attributes.append("empty")
+            else:
+                fund_attributes.append(elements[i].text)
+            #increment counter up one
+            i += 1
+    return headers
 
-#Use requests library to retrieve source code
-response = requests.get(link)
-#Add error handling based on http response code
-print response
-#transform response into string
-source = response.content
+def trim_headers(headers):
+    #Temporary strip of all but first x elements - also strip out namespace from header
+    reduced_headers = headers[:12]
+    for x in reduced_headers:
+        #print type(x)
+        x_split = x.split('}', 1)[-1]
+        #print x_split
+    return reduced_headers
 
-#create lxml etree element
-root = etree.fromstring(source)
+def get_fund_data(etree):
+    #Define namespace and get all records of infoTable
+    funds = etree.xpath('//informationTable:infoTable', namespaces = {"informationTable": "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
+    #Set up empty list for lists of child nodes' text (multidimensional list)
+    funds_text = []
+    #Iterate through each infoTable
+    for fund in funds:
+        #Get all child and grandchild elements within the infoTable
+        elements = fund.xpath('.//*')
+        #Set up counter for second level of iteration
+        i = 0
+        #Set up empty list for text values that will get inserted into funds_text list
+        fund_attributes = []
+        #insert the list of text values into the funds_text list
+        funds_text.append(fund_attributes)
+        #iterate through children of infoTable getting their text values
+        for x in elements:
+            #store text values in fund_attributes
+            if elements[i].text == "\n      ":
+                fund_attributes.append("empty")
+            else:
+                fund_attributes.append(elements[i].text)
+            #increment counter up one
+            i += 1
+    return funds_text
 
-#Define namespace and get all records of infoTable
-funds = root.xpath('//informationTable:infoTable', namespaces = {"informationTable": "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
-
-#Set up empty list for headers
-headers = []
-#Set up empty list for lists of child nodes' text (multidimensional list)
-funds_text = []
-#Iterate through each infoTable
-for fund in funds:
-    #Get all child and grandchild elements within the infoTable
-    elements = fund.xpath('.//*')
-    #Set up counter for second level of iteration
-    i = 0
-    #Set up empty list for text values that will get inserted into funds_text list
-    fund_attributes = []
-    #insert the list of text values into the funds_text list
-    funds_text.append(fund_attributes)
-    #iterate through children of infoTable getting their text values
-    for x in elements:
-        #NEED TO JUST DO THIS ONCE
-        headers.append(elements[i].tag)
-        #store text values in fund_attributes
-        if elements[i].text == "\n      ":
-            fund_attributes.append("empty")
-        else:
-            fund_attributes.append(elements[i].text)
-
-        #increment counter up one
-        i += 1
-
-#Temporary strip of all but first x elements - also strip out namespace from header
-reduced_headers = headers[:12]
-for x in reduced_headers:
-    #print type(x)
-    x_split = x.split('}', 1)[-1]
-    #print x_split
-
-#Create TSV name - need to add pass through from ARGV
-tsvFilename = "tmp/ticker.tsv"
-#Create or Open TSV
-tsv = open(tsvFilename, "w")
-#Create colNames, need to get dynamically and separate with TSV
-col_names = '\t'.join(reduced_headers)
-tsv.write(col_names)
-tsv.write('\n')
-for values in funds_text:
-    string_values = '\t'.join(values)
-    #print string_values
-    #write to tsv
-    tsv.write(string_values)
-    #Move to new line
-    tsv.write("\n")
+def write_tsv(headers, data):
+    #Add third option above to pass filename from ARGV
+    #Create TSV name - need to add pass through from ARGV
+    tsvFilename = "tmp/ticker.tsv"
+    #Create or Open TSV
+    tsv = open(tsvFilename, "w")
+    #Create colNames, need to get dynamically and separate with TSV
+    col_names = '\t'.join(headers)
+    tsv.write(col_names)
+    tsv.write('\n')
+    for values in data:
+        string_values = '\t'.join(values)
+        #print string_values
+        #write to tsv
+        tsv.write(string_values)
+        #Move to new line
+        tsv.write("\n")
 
 if __name__ == "__main__":
     main()
