@@ -23,7 +23,7 @@ def main():
     reduced_headers = trim_headers(headers)
     print reduced_headers
     fund_data = get_fund_data(xml_tree)
-    print fund_data
+    #print fund_data
     write_tsv(reduced_headers, fund_data)
 
 def cik_lookup():
@@ -81,39 +81,23 @@ def create_etree(xml):
 def get_headers(etree):
     funds = etree.xpath('//informationTable:infoTable', namespaces = {"informationTable": "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
     headers = []
-    #Set up empty list for lists of child nodes' text (multidimensional list)
-    funds_text = []
-    #Iterate through each infoTable
-    for fund in funds:
-        #Get all child and grandchild elements within the infoTable
-        elements = fund.xpath('.//*')
-        #Set up counter for second level of iteration
-        i = 0
-        #Set up empty list for text values that will get inserted into funds_text list
-        fund_attributes = []
-        #insert the list of text values into the funds_text list
-        funds_text.append(fund_attributes)
-        #iterate through children of infoTable getting their text values
-        for x in elements:
-            #NEED TO JUST DO THIS ONCE
-            headers.append(elements[i].tag)
-            #store text values in fund_attributes
-            if elements[i].text == "\n      ":
-                fund_attributes.append("empty")
-            else:
-                fund_attributes.append(elements[i].text)
-            #increment counter up one
-            i += 1
+    fund = funds[0]
+    elements = fund.xpath('.//*')
+    #Set up counter to loop through elements list
+    i = 0
+    for x in elements:
+        #Insert tag value into headers list
+        headers.append(elements[i].tag)
+        #increment counter up one
+        i += 1
     return headers
 
+#XMl tags inserted into headers come with namespace URL - this function trims that off
 def trim_headers(headers):
-    #Temporary strip of all but first x elements - also strip out namespace from header
-    reduced_headers = headers[:12]
-    for x in reduced_headers:
-        #print type(x)
-        x_split = x.split('}', 1)[-1]
-        #print x_split
-    return reduced_headers
+    split_headers = []
+    for x in headers:
+        split_headers.append(x.split('}', 1)[-1])
+    return split_headers
 
 def get_fund_data(etree):
     #Define namespace and get all records of infoTable
