@@ -23,7 +23,7 @@ def main():
     reduced_headers = trim_headers(headers)
     print reduced_headers
     fund_data = get_fund_data(xml_tree)
-    #print fund_data
+    print fund_data
     write_tsv(reduced_headers, fund_data)
 
 def cik_lookup():
@@ -67,7 +67,7 @@ def wait_for_load(driver, div_id, text):
     )
 
 def stringify_xml(url):
-    #Use requests library to retrieve source code
+    #Use requests library to retrieve source XML
     response = requests.get(url)
     #Add error handling based on http response code
     print response
@@ -81,13 +81,14 @@ def create_etree(xml):
 def get_headers(etree):
     funds = etree.xpath('//informationTable:infoTable', namespaces = {"informationTable": "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
     headers = []
+    #Only need to loop through one fund
     fund = funds[0]
-    elements = fund.xpath('.//*')
+    fund_tags = fund.xpath('.//*')
     #Set up counter to loop through elements list
     i = 0
-    for x in elements:
+    for x in fund_tags:
         #Insert tag value into headers list
-        headers.append(elements[i].tag)
+        headers.append(fund_tags[i].tag)
         #increment counter up one
         i += 1
     return headers
@@ -103,27 +104,27 @@ def get_fund_data(etree):
     #Define namespace and get all records of infoTable
     funds = etree.xpath('//informationTable:infoTable', namespaces = {"informationTable": "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
     #Set up empty list for lists of child nodes' text (multidimensional list)
-    funds_text = []
-    #Iterate through each infoTable
+    funds_values = []
+    #Iterate through each infoTable tag
     for fund in funds:
         #Get all child and grandchild elements within the infoTable
-        elements = fund.xpath('.//*')
+        fund_text = fund.xpath('.//*')
         #Set up counter for second level of iteration
         i = 0
-        #Set up empty list for text values that will get inserted into funds_text list
+        #Set up empty list for text values that will get inserted into funds_values list
         fund_attributes = []
-        #insert the list of text values into the funds_text list
-        funds_text.append(fund_attributes)
+        #insert the list of text values into the funds_values list
+        funds_values.append(fund_attributes)
         #iterate through children of infoTable getting their text values
-        for x in elements:
-            #store text values in fund_attributes
-            if elements[i].text == "\n      ":
+        for x in fund_text:
+            #check for empty values and rewrite as string
+            if fund_text[i].text == "\n      ":
                 fund_attributes.append("empty")
             else:
-                fund_attributes.append(elements[i].text)
+                fund_attributes.append(fund_text[i].text)
             #increment counter up one
             i += 1
-    return funds_text
+    return funds_values
 
 def write_tsv(headers, data):
     #Add third option above to pass filename from ARGV
@@ -131,7 +132,6 @@ def write_tsv(headers, data):
     tsvFilename = "tmp/ticker.tsv"
     #Create or Open TSV
     tsv = open(tsvFilename, "w")
-    #Create colNames, need to get dynamically and separate with TSV
     col_names = '\t'.join(headers)
     tsv.write(col_names)
     tsv.write('\n')
