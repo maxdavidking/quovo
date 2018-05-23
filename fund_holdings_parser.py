@@ -14,6 +14,9 @@ def main():
     print form_results
     filing_details = get_xml_url(form_results)
     print filing_details
+    xml_string = stringify_xml(filing_details)
+    print xml_string
+    xml_tree = create_etree(xml_string)
 
 def cik_lookup():
     #Include getopts options
@@ -54,6 +57,18 @@ def wait_for_load(driver, div_id, text):
         text
         )
     )
+
+def stringify_xml(url):
+    #Use requests library to retrieve source code
+    response = requests.get(url)
+    #Add error handling based on http response code
+    print response
+    #transform response into string
+    return response.content
+
+def create_etree(xml):
+    #create lxml etree element
+    return etree.fromstring(xml)
 
 #Hard code link directly to XML for now
 link = "https://www.sec.gov/Archives/edgar/data/1166559/000110465918033472/a18-13444_1informationtable.xml"
