@@ -8,11 +8,12 @@ from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.by import By
 
 def main():
-    search_results = cik_lookup()
+    driver = webdriver.Firefox()
+    search_results = cik_lookup(driver)
     print search_results
-    form_results = form_lookup(search_results)
+    form_results = form_lookup(driver, search_results)
     print form_results
-    filing_details = get_xml_url(form_results)
+    filing_details = get_xml_url(driver, form_results)
     print filing_details
     xml_string = stringify_xml(filing_details)
     print xml_string
@@ -26,32 +27,32 @@ def main():
     print fund_data
     write_tsv(reduced_headers, fund_data)
 
-def cik_lookup():
+def cik_lookup(driver):
     #Include getopts options
     #Have error handling
-    driver = webdriver.Firefox()
     driver.get("https://www.sec.gov/edgar/searchedgar/companysearch.html")
-    element = driver.find_element_by_id("cik")
+    cik_search = driver.find_element_by_id("cik")
     #Pass CIK from command line arguments to search box
-    element.send_keys(sys.argv[1])
-    element.submit()
-    #Call wait to ensure that new page loads
+    cik_search.send_keys(sys.argv[1])
+    cik_search.submit()
+    #Call wait_for_load to ensure that new page loads
     wait_for_load(driver, 'documentsbutton', 'Documents')
     return driver.current_url
 
-def form_lookup(url):
+def form_lookup(driver, url):
     #Have error handling
-    driver = webdriver.Firefox()
     driver.get(url)
-    element = driver.find_element_by_xpath("//*[contains(text(), '13F-HR')]/following::td")
-    element.click()
-    #Call wait to ensure that new page loads
+    #Get the link from the table cell directly after the cell that contains the
+    #13F-HR text
+    form_13F_HR = driver.find_element_by_xpath(
+                                "//*[contains(text(), '13F-HR')]/following::td")
+    form_13F_HR.click()
+    #Call wait_for_load to ensure that new page loads
     wait_for_load(driver, 'formName', 'Form 13F-HR')
     return driver.current_url
 
-def get_xml_url(url):
+def get_xml_url(driver, url):
     #Have error handling
-    driver = webdriver.Firefox()
     driver.get(url)
     element = driver.find_element_by_partial_link_text("able.xml")
     return element.get_attribute("href")
@@ -79,7 +80,10 @@ def create_etree(xml):
     return etree.fromstring(xml)
 
 def get_headers(etree):
-    funds = etree.xpath('//informationTable:infoTable', namespaces = {"informationTable": "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
+    funds = etree.xpath(
+                '//informationTable:infoTable',
+                namespaces = {"informationTable":
+                "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
     headers = []
     #Only need to loop through one fund
     fund = funds[0]
@@ -93,7 +97,7 @@ def get_headers(etree):
         i += 1
     return headers
 
-#XMl tags inserted into headers come with namespace URL - this function trims that off
+#XMl tags inserted into headers come with namespace URL, this trims those off
 def trim_headers(headers):
     split_headers = []
     for x in headers:
@@ -102,7 +106,10 @@ def trim_headers(headers):
 
 def get_fund_data(etree):
     #Define namespace and get all records of infoTable
-    funds = etree.xpath('//informationTable:infoTable', namespaces = {"informationTable": "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
+    funds = etree.xpath(
+                '//informationTable:infoTable',
+                namespaces = {"informationTable":
+                "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
     #Set up empty list for lists of child nodes' text (multidimensional list)
     funds_values = []
     #Iterate through each infoTable tag
@@ -111,7 +118,7 @@ def get_fund_data(etree):
         fund_text = fund.xpath('.//*')
         #Set up counter for second level of iteration
         i = 0
-        #Set up empty list for text values that will get inserted into funds_values list
+        #Empty list for text values that get inserted into funds_values list
         fund_attributes = []
         #insert the list of text values into the funds_values list
         funds_values.append(fund_attributes)
