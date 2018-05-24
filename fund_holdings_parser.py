@@ -136,10 +136,10 @@ def get_fund_data(xpath):
         # Iterate through children of infoTable getting their text values
         for x in fund_text:
             # Check for empty values and rewrite
-            if fund_text[i].text == "\n      ":
-                fund_attributes.append("empty")
-            else:
+            if "\n" not in fund_text[i].text:
                 fund_attributes.append(fund_text[i].text)
+            else:
+                fund_attributes.append("empty")
             # Increment counter up one
             i += 1
     return funds_values
