@@ -1,11 +1,13 @@
 from lxml import etree
 import requests
 import csv
-import sys, getopt
+import sys
+import getopt
 from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait as wait
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.by import By
+
 
 def main():
     #Set up webdriver to navigate EDGAR
@@ -25,6 +27,7 @@ def main():
     #Write to TSV file
     write_tsv(reduced_headers, fund_data)
 
+
 def cik_lookup(driver):
     #Include getopts options
     #Have error handling
@@ -34,19 +37,19 @@ def cik_lookup(driver):
     cik_search.send_keys(sys.argv[1])
     cik_search.submit()
     #Call wait_for_load to ensure that new page loads
-    wait_for_load(driver, 'documentsbutton', 'Documents')
+    wait_for_load(driver, "documentsbutton", "Documents")
     return driver.current_url
 
 def form_lookup(driver, url):
     #Have error handling
     driver.get(url)
-    #Get the link from the table cell directly after the cell that contains the
-    #13F-HR text
+    #Get the link from the table cell directly after the cell that contains
+    #the 13F-HR text
     form_13F_HR = driver.find_element_by_xpath(
-                                "//*[contains(text(), '13F-HR')]/following::td")
+        "//*[contains(text(), '13F-HR')]/following::td")
     form_13F_HR.click()
     #Call wait_for_load to ensure that new page loads
-    wait_for_load(driver, 'formName', 'Form 13F-HR')
+    wait_for_load(driver, "formName", "Form 13F-HR")
     return driver.current_url
 
 def get_xml_url(driver, url):
@@ -58,12 +61,9 @@ def get_xml_url(driver, url):
 #Selenium will look for an element on a page without waiting for the new page
 #to load. This function ensures the new page loads
 def wait_for_load(driver, div_id, text):
-    wait(driver, 3).until(
-    expected_conditions.text_to_be_present_in_element(
-        (By.ID, div_id),
-        text
-        )
-    )
+    WebDriverWait(driver, 3).until(
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, div_id), text))
 
 def stringify_xml(url):
     #Use requests library to retrieve source XML
@@ -79,14 +79,14 @@ def create_etree(xml):
 
 def get_headers(etree):
     funds = etree.xpath(
-                '//informationTable:infoTable',
+                "//informationTable:infoTable",
                 namespaces = {"informationTable":
                 "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
     headers = []
     #Only need to loop through one fund
     fund = funds[0]
     #Get all children and grandchildren
-    fund_tags = fund.xpath('.//*')
+    fund_tags = fund.xpath(".//*")
     #Set up counter to loop through fund_tags list
     i = 0
     for x in fund_tags:
@@ -101,14 +101,14 @@ def get_headers(etree):
 def trim_headers(headers):
     split_headers = []
     for x in headers:
-        split_headers.append(x.split('}', 1)[-1])
+        split_headers.append(x.split("}", 1)[-1])
     return split_headers
 
 def get_fund_data(etree):
     #Define namespace and get all records of infoTable
     #MOVE TO NEW METHOD AND CALL HERE AND IN HEADERS
     funds = etree.xpath(
-                '//informationTable:infoTable',
+                "//informationTable:infoTable",
                 namespaces = {"informationTable":
                 "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
     #Set up empty list for lists of child nodes' text (multidimensional list)
@@ -116,7 +116,7 @@ def get_fund_data(etree):
     #Iterate through each infoTable tag
     for fund in funds:
         #Get all child and grandchild elements within the infoTable
-        fund_text = fund.xpath('.//*')
+        fund_text = fund.xpath(".//*")
         #Set up counter for second level of iteration
         i = 0
         #Create empty list for text values that will get put into funds_values
