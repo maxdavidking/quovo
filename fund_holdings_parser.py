@@ -76,7 +76,7 @@ def wait_for_load(driver, div_id, text):
             expected_conditions.text_to_be_present_in_element(
                 (By.ID, div_id), text))
     except TimeoutException:
-        print "The page timed out, there may be a problem with your search"
+        print "The page timed out. There may be a problem with your search"
         sys.exit()
 
 
