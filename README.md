@@ -4,13 +4,14 @@ filed in EDGAR (https://www.sec.gov/edgar/searchedgar/companysearch.html)
 and convert that data into a tab separated value file (TSV).
 
 # Instructions
-1. Get a ticker symbol or CIK number from http://morningstar.com/ or
+1. Get a valid ticker symbol or CIK number from http://morningstar.com/ or
 lipperweb.com
   * Some working CIK's are:
     * 0001166559
     * 0000102909
     * 0001006438
-2. Run the script with the command:
+2. Pass your CIK or ticker symbol to the script as an argument. Run the script
+with the command:
   * $ python fund_holdings_parser.py <CIK>
 3. The output is stored as a .tsv file in the tmp/ folder
 
