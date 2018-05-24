@@ -8,15 +8,21 @@ from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.by import By
 
 def main():
+    #Set up webdriver to navigate EDGAR
     driver = webdriver.Firefox()
+    #Move through pages to get to form 13F-HR XML file
     search_results = cik_lookup(driver)
     form_results = form_lookup(driver, search_results)
-    filing_details = get_xml_url(driver, form_results)
-    xml_string = stringify_xml(filing_details)
+    filing = get_xml_url(driver, form_results)
+    #Get XML and convert to string and then etree
+    xml_string = stringify_xml(filing)
     xml_tree = create_etree(xml_string)
+    #Store XML tags as headers for TSV
     headers = get_headers(xml_tree)
     reduced_headers = trim_headers(headers)
+    #Get XML text as data for TSV
     fund_data = get_fund_data(xml_tree)
+    #Write to TSV file
     write_tsv(reduced_headers, fund_data)
 
 def cik_lookup(driver):
@@ -79,8 +85,9 @@ def get_headers(etree):
     headers = []
     #Only need to loop through one fund
     fund = funds[0]
+    #Get all children and grandchildren
     fund_tags = fund.xpath('.//*')
-    #Set up counter to loop through elements list
+    #Set up counter to loop through fund_tags list
     i = 0
     for x in fund_tags:
         #Insert tag value into headers list
@@ -89,7 +96,8 @@ def get_headers(etree):
         i += 1
     return headers
 
-#XMl tags inserted into headers come with namespace URL, this trims those off
+#XMl tags come with namespace (see line below) - this trims those off
+#{http://www.sec.gov/edgar/document/thirteenf/informationtable}nameOfIssuer
 def trim_headers(headers):
     split_headers = []
     for x in headers:
@@ -98,6 +106,7 @@ def trim_headers(headers):
 
 def get_fund_data(etree):
     #Define namespace and get all records of infoTable
+    #MOVE TO NEW METHOD AND CALL HERE AND IN HEADERS
     funds = etree.xpath(
                 '//informationTable:infoTable',
                 namespaces = {"informationTable":
@@ -110,24 +119,23 @@ def get_fund_data(etree):
         fund_text = fund.xpath('.//*')
         #Set up counter for second level of iteration
         i = 0
-        #Empty list for text values that get inserted into funds_values list
+        #Create empty list for text values that will get put into funds_values
         fund_attributes = []
-        #insert the list of text values into the funds_values list
+        #Insert the list of text values into the funds_values list
         funds_values.append(fund_attributes)
-        #iterate through children of infoTable getting their text values
+        #Iterate through children of infoTable getting their text values
         for x in fund_text:
-            #check for empty values and rewrite as string
+            #Check for empty values and rewrite
             if fund_text[i].text == "\n      ":
                 fund_attributes.append("empty")
             else:
                 fund_attributes.append(fund_text[i].text)
-            #increment counter up one
+            #Increment counter up one
             i += 1
     return funds_values
 
 def write_tsv(headers, data):
-    #Add third option above to pass filename from ARGV
-    #Create TSV name - need to add pass through from ARGV
+    #Create TSV named as argument value
     tsvFilename = ("tmp/%s.tsv" % sys.argv[1])
     #Create or Open TSV
     tsv = open(tsvFilename, "w")
@@ -136,8 +144,7 @@ def write_tsv(headers, data):
     tsv.write('\n')
     for values in data:
         string_values = '\t'.join(values)
-        #print string_values
-        #write to tsv
+        #Write data to TSV
         tsv.write(string_values)
         #Move to new line
         tsv.write("\n")
