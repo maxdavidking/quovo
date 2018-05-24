@@ -19,11 +19,12 @@ def main():
     # Get XML and convert to string and then etree
     xml_string = stringify_xml(filing)
     xml_tree = create_etree(xml_string)
+    funds = query_etree(xml_tree)
     # Store XML tags as headers for TSV
-    headers = get_headers(xml_tree)
+    headers = get_headers(funds)
     reduced_headers = trim_headers(headers)
     # Get XML text as data for TSV
-    fund_data = get_fund_data(xml_tree)
+    fund_data = get_fund_data(funds)
     # Write to TSV file
     write_tsv(reduced_headers, fund_data)
 
@@ -83,15 +84,19 @@ def create_etree(xml):
     return etree.fromstring(xml)
 
 
-def get_headers(etree):
-    funds = etree.xpath(
+def query_etree(etree):
+    #Returns a list of top level elements from XML etree
+    return etree.xpath(
         "//informationTable:infoTable",
         namespaces={
             "informationTable":
             "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
+
+
+def get_headers(xpath):
     headers = []
     # Only need to loop through one fund
-    fund = funds[0]
+    fund = xpath[0]
     # Get all children and grandchildren
     fund_tags = fund.xpath(".//*")
     # Set up counter to loop through fund_tags list
@@ -113,18 +118,13 @@ def trim_headers(headers):
     return split_headers
 
 
-def get_fund_data(etree):
+def get_fund_data(xpath):
     # Define namespace and get all records of infoTable
     # MOVE TO NEW METHOD AND CALL HERE AND IN HEADERS
-    funds = etree.xpath(
-        "//informationTable:infoTable",
-        namespaces={
-            "informationTable":
-            "http://www.sec.gov/edgar/document/thirteenf/informationtable"})
     # Set up empty list for lists of child nodes' text (multidimensional list)
     funds_values = []
     # Iterate through each infoTable tag
-    for fund in funds:
+    for fund in xpath:
         # Get all child and grandchild elements within the infoTable
         fund_text = fund.xpath(".//*")
         # Set up counter for second level of iteration
