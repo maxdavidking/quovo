@@ -7,6 +7,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
 
 
 def main():
@@ -30,51 +31,61 @@ def main():
 
 
 def cik_lookup(driver):
-    # Include getopts options
-    # Have error handling
-    driver.get("https://www.sec.gov/edgar/searchedgar/companysearch.html")
-    cik_search = driver.find_element_by_id("cik")
-    # Pass CIK from command line arguments to search box
-    cik_search.send_keys(sys.argv[1])
-    cik_search.submit()
-    # Call wait_for_load to ensure that new page loads
-    wait_for_load(driver, "documentsbutton", "Documents")
-    return driver.current_url
+    try:
+        driver.get("https://www.sec.gov/edgar/searchedgar/companysearch.html")
+        cik_search = driver.find_element_by_id("cik")
+        # Pass CIK from command line arguments to search box
+        cik_search.send_keys(sys.argv[1])
+        cik_search.submit()
+        # Call wait_for_load to ensure that new page loads
+        wait_for_load(driver, "documentsbutton", "Documents")
+        return driver.current_url
+    except TimeoutException:
+        print "Your CIK or ticker symbol could not be found"
+        sys.exit()
 
 
 def form_lookup(driver, url):
-    # Have error handling
-    driver.get(url)
-    # Get the link from the table cell directly after the cell that contains
-    # the text '13F-HR'
-    form_13F_HR = driver.find_element_by_xpath(
-        "//*[contains(text(), '13F-HR')]/following::td")
-    form_13F_HR.click()
-    # Call wait_for_load to ensure that new page loads
-    wait_for_load(driver, "formName", "Form 13F-HR")
-    return driver.current_url
+    try:
+        driver.get(url)
+        # Get the link from the table cell directly after the cell that contains
+        # the text '13F-HR'
+        form_13F_HR = driver.find_element_by_xpath(
+            "//*[contains(text(), '13F-HR')]/following::td")
+        form_13F_HR.click()
+        # Call wait_for_load to ensure that new page loads
+        wait_for_load(driver, "formName", "Form 13F-HR")
+        return driver.current_url
+    except TimeoutException:
+        print "No Form 13F-HR was found for this CIK or ticker"
+        sys.exit()
 
 
 def get_xml_url(driver, url):
-    # Have error handling
-    driver.get(url)
-    element = driver.find_element_by_partial_link_text("able.xml")
-    return element.get_attribute("href")
+    try:
+        driver.get(url)
+        element = driver.find_element_by_partial_link_text("able.xml")
+        return element.get_attribute("href")
+    except TimeoutException:
+        print "No XML file was found for this Form 13F-HR"
+        sys.exit()
 
 
 # Selenium will look for an element on a page without waiting for the new page
 # to load. This function ensures the new page loads
 def wait_for_load(driver, div_id, text):
-    WebDriverWait(driver, 3).until(
-        expected_conditions.text_to_be_present_in_element(
-            (By.ID, div_id), text))
+    try:
+        WebDriverWait(driver, 3).until(
+            expected_conditions.text_to_be_present_in_element(
+                (By.ID, div_id), text))
+    except TimeoutException:
+        print "The page timed out, there may be a problem with your search"
+        sys.exit()
 
 
 def stringify_xml(url):
     # Use requests library to retrieve source XML
     response = requests.get(url)
-    # Add error handling based on http response code
-    print response
     # transform response into string
     return response.content
 
@@ -119,8 +130,6 @@ def trim_headers(headers):
 
 
 def get_fund_data(xpath):
-    # Define namespace and get all records of infoTable
-    # MOVE TO NEW METHOD AND CALL HERE AND IN HEADERS
     # Set up empty list for lists of child nodes' text (multidimensional list)
     funds_values = []
     # Iterate through each infoTable tag
@@ -148,6 +157,7 @@ def get_fund_data(xpath):
 def write_tsv(headers, data):
     # Create TSV named as argument value
     tsvFilename = ("tmp/%s.tsv" % sys.argv[1])
+    print "Writing TSV to", tsvFilename
     # Create or Open TSV
     tsv = open(tsvFilename, "w")
     col_names = '\t'.join(headers)
