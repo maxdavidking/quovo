@@ -10,21 +10,13 @@ from selenium.webdriver.common.by import By
 def main():
     driver = webdriver.Firefox()
     search_results = cik_lookup(driver)
-    print search_results
     form_results = form_lookup(driver, search_results)
-    print form_results
     filing_details = get_xml_url(driver, form_results)
-    print filing_details
     xml_string = stringify_xml(filing_details)
-    print xml_string
     xml_tree = create_etree(xml_string)
-    print xml_tree
     headers = get_headers(xml_tree)
-    print headers
     reduced_headers = trim_headers(headers)
-    print reduced_headers
     fund_data = get_fund_data(xml_tree)
-    print fund_data
     write_tsv(reduced_headers, fund_data)
 
 def cik_lookup(driver):
@@ -136,7 +128,7 @@ def get_fund_data(etree):
 def write_tsv(headers, data):
     #Add third option above to pass filename from ARGV
     #Create TSV name - need to add pass through from ARGV
-    tsvFilename = "tmp/ticker.tsv"
+    tsvFilename = ("tmp/%s.tsv" % sys.argv[1])
     #Create or Open TSV
     tsv = open(tsvFilename, "w")
     col_names = '\t'.join(headers)
