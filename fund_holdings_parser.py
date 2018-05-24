@@ -8,6 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException
 
 
 def main():
@@ -31,32 +32,28 @@ def main():
 
 
 def cik_lookup(driver):
-    try:
-        driver.get("https://www.sec.gov/edgar/searchedgar/companysearch.html")
-        cik_search = driver.find_element_by_id("cik")
-        # Pass CIK from command line arguments to search box
-        cik_search.send_keys(sys.argv[1])
-        cik_search.submit()
-        # Call wait_for_load to ensure that new page loads
-        wait_for_load(driver, "documentsbutton", "Documents")
-        return driver.current_url
-    except TimeoutException:
-        print "Your CIK or ticker symbol could not be found"
-        sys.exit()
+    driver.get("https://www.sec.gov/edgar/searchedgar/companysearch.html")
+    cik_search = driver.find_element_by_id("cik")
+    # Pass CIK from command line arguments to search box
+    cik_search.send_keys(sys.argv[1])
+    cik_search.submit()
+    # Call wait_for_load to ensure that new page loads
+    wait_for_load(driver, "documentsbutton", "Documents")
+    return driver.current_url
 
 
 def form_lookup(driver, url):
     try:
         driver.get(url)
-        # Get the link from the table cell directly after the cell that contains
-        # the text '13F-HR'
+        # Get the link from the table cell directly after the cell that
+        # contains the text '13F-HR'
         form_13F_HR = driver.find_element_by_xpath(
             "//*[contains(text(), '13F-HR')]/following::td")
         form_13F_HR.click()
         # Call wait_for_load to ensure that new page loads
         wait_for_load(driver, "formName", "Form 13F-HR")
         return driver.current_url
-    except TimeoutException:
+    except NoSuchElementException:
         print "No Form 13F-HR was found for this CIK or ticker"
         sys.exit()
 
@@ -66,7 +63,7 @@ def get_xml_url(driver, url):
         driver.get(url)
         element = driver.find_element_by_partial_link_text("able.xml")
         return element.get_attribute("href")
-    except TimeoutException:
+    except NoSuchElementException:
         print "No XML file was found for this Form 13F-HR"
         sys.exit()
 
@@ -96,7 +93,7 @@ def create_etree(xml):
 
 
 def query_etree(etree):
-    #Returns a list of top level elements from XML etree
+    # Returns a list of top level elements from XML etree
     return etree.xpath(
         "//informationTable:infoTable",
         namespaces={
