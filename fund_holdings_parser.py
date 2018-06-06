@@ -156,16 +156,16 @@ def write_tsv(headers, data):
     tsvFilename = ("tmp/%s.tsv" % sys.argv[1])
     print "Writing TSV to", tsvFilename
     # Create or Open TSV
-    tsv = open(tsvFilename, "w")
-    col_names = '\t'.join(headers)
-    tsv.write(col_names)
-    tsv.write('\n')
-    for values in data:
-        string_values = '\t'.join(values)
-        # Write data to TSV
-        tsv.write(string_values)
-        # Move to new line
-        tsv.write("\n")
+    with open(tsvFilename, "w") as tsv:
+        col_names = '\t'.join(headers)
+        tsv.write(col_names)
+        tsv.write('\n')
+        for values in data:
+            string_values = '\t'.join(values)
+            # Write data to TSV
+            tsv.write(string_values)
+            # Move to new line
+            tsv.write("\n")
 
 if __name__ == "__main__":
     main()
