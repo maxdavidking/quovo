@@ -59,7 +59,9 @@ def requests_final_url(url_list):
     xml_url = requests.get(url_list[0])
     form_13f = html.fromstring(xml_url.content)
     xml_file = form_13f.xpath('//a[contains(@href,"Table.xml")]/@href')
-    return xml_file[1]
+    final_string = "https://www.sec.gov" + xml_file[1]
+    print final_string
+    return final_string
 
 
 def stringify_xml(url):
