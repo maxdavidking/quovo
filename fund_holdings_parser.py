@@ -13,14 +13,12 @@ from selenium.common.exceptions import NoSuchElementException
 
 
 def main():
-    # Set up webdriver to navigate EDGAR
-    driver = webdriver.Firefox()
-    # Move through pages to get to form 13F-HR XML file
-    search_results = cik_lookup(driver)
-    form_results = form_lookup(driver, search_results)
-    filing = get_xml_url(driver, form_results)
+    requests_version = requests_lookup()
+    xml_list = requests_to_xml(requests_version, "/Archives")
+    good_url = requests_url_fix(xml_list)
+    final_url = requests_final_url(good_url)
     # Get XML and convert to string and then etree
-    xml_string = stringify_xml(filing)
+    xml_string = stringify_xml(final_url)
     xml_tree = create_etree(xml_string)
     funds = query_etree(xml_tree)
     # Store XML tags as headers for TSV
@@ -32,53 +30,36 @@ def main():
     write_tsv(reduced_headers, fund_data)
 
 
-def cik_lookup(driver):
-    driver.get("https://www.sec.gov/edgar/searchedgar/companysearch.html")
-    cik_search = driver.find_element_by_id("cik")
-    # Pass CIK from command line arguments to search box
-    cik_search.send_keys(sys.argv[1])
-    cik_search.submit()
-    # Call wait_for_load to ensure that new page loads
-    wait_for_load(driver, "documentsbutton", "Documents")
-    return driver.current_url
+# Is this fine hardcoded?
+def requests_lookup():
+    url = (
+        "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=%s&type=13f-hr&dateb=&owner=exclude&count=40"
+        % sys.argv[1])
+    return requests.get(url)
 
 
-def form_lookup(driver, url):
-    try:
-        driver.get(url)
-        # Get the link from the table cell directly after the cell that
-        # contains the text '13F-HR'
-        form_13F_HR = driver.find_element_by_xpath(
-            "//*[contains(text(), '13F-HR')]/following::td")
-        form_13F_HR.click()
-        # Call wait_for_load to ensure that new page loads
-        wait_for_load(driver, "formName", "Form 13F-HR")
-        return driver.current_url
-    except NoSuchElementException:
-        print "No Form 13F-HR was found for this CIK or ticker"
-        sys.exit()
+# Get list of all links to 13f-hr form filings
+def requests_to_xml(request, query_string):
+    webpage = html.fromstring(request.content)
+    return webpage.xpath('//a[contains(@href,"%s")]/@href' % query_string)
 
 
-def get_xml_url(driver, url):
-    try:
-        driver.get(url)
-        element = driver.find_element_by_partial_link_text("able.xml")
-        return element.get_attribute("href")
-    except NoSuchElementException:
-        print "No XML file was found for this Form 13F-HR"
-        sys.exit()
+# Add base URL to relative links to 13f-hr forms
+def requests_url_fix(xml_list):
+    base_url = "https://www.sec.gov"
+    archives_url = []
+    for xml in xml_list:
+        full_url = base_url + xml
+        archives_url.append(full_url)
+    return archives_url
 
 
-# Selenium will look for an element on a page without waiting for the new page
-# to load. This function ensures the new page loads
-def wait_for_load(driver, div_id, text):
-    try:
-        WebDriverWait(driver, 3).until(
-            expected_conditions.text_to_be_present_in_element(
-                (By.ID, div_id), text))
-    except TimeoutException:
-        print "The page timed out. There may be a problem with your search"
-        sys.exit()
+# Add parameter to specify how many you want to run
+def requests_final_url(url_list):
+    xml_url = requests.get(url_list[0])
+    form_13f = html.fromstring(xml_url.content)
+    xml_file = form_13f.xpath('//a[contains(@href,"Table.xml")]/@href')
+    return xml_file[1]
 
 
 def stringify_xml(url):
