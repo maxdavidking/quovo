@@ -1,4 +1,5 @@
 from lxml import etree
+from lxml import html
 import requests
 import csv
 import sys
