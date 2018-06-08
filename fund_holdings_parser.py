@@ -13,7 +13,7 @@ from selenium.common.exceptions import NoSuchElementException
 
 
 def main():
-    requests_version = requests_lookup()
+    requests_version = edgar_lookup(sys.argv[1])
     xml_list = requests_to_xml(requests_version, "/Archives")
     good_url = requests_url_fix(xml_list)
     final_url = requests_final_url(good_url)
@@ -31,11 +31,16 @@ def main():
 
 
 # Is this fine hardcoded?
-def requests_lookup():
-    url = (
-        "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=%s&type=13f-hr&dateb=&owner=exclude&count=40"
-        % sys.argv[1])
-    return requests.get(url)
+def edgar_lookup(cik):
+    payload = {
+        'CIK':cik,
+        'action':'getcompany',
+        'type':'13f-hr',
+        'owner':'exclude',
+        'count':100
+    }
+    url = "https://www.sec.gov/cgi-bin/browse-edgar?"
+    return requests.get(url, payload)
 
 
 # Get list of all links to 13f-hr form filings
@@ -60,7 +65,6 @@ def requests_final_url(url_list):
     form_13f = html.fromstring(xml_url.content)
     xml_file = form_13f.xpath('//a[contains(@href,"Table.xml")]/@href')
     final_string = "https://www.sec.gov" + xml_file[1]
-    print final_string
     return final_string
 
 
