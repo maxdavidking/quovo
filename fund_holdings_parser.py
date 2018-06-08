@@ -13,10 +13,9 @@ from selenium.common.exceptions import NoSuchElementException
 
 
 def main():
-    requests_version = edgar_lookup(sys.argv[1])
-    xml_list = requests_to_xml(requests_version, "/Archives")
-    good_url = requests_url_fix(xml_list)
-    final_url = requests_final_url(good_url)
+    xml_list = edgar_lookup(sys.argv[1])
+    fixed_url = requests_url_fix(xml_list)
+    final_url = requests_final_url(fixed_url)
     # Get XML and convert to string and then etree
     xml_string = stringify_xml(final_url)
     xml_tree = create_etree(xml_string)
@@ -40,13 +39,9 @@ def edgar_lookup(cik):
         'count':100
     }
     url = "https://www.sec.gov/cgi-bin/browse-edgar?"
-    return requests.get(url, payload)
-
-
-# Get list of all links to 13f-hr form filings
-def requests_to_xml(request, query_string):
-    webpage = html.fromstring(request.content)
-    return webpage.xpath('//a[contains(@href,"%s")]/@href' % query_string)
+    edgar_page = requests.get(url, payload)
+    webpage = html.fromstring(edgar_page.content)
+    return webpage.xpath('//a[contains(@href,"/Archives")]/@href')
 
 
 # Add base URL to relative links to 13f-hr forms
